@@ -3,11 +3,13 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const colors = require('colors');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 const fileupload = require('express-fileupload');
 
 const errorHandler = require('./middlewares/error');
 const bootcamps = require('./routes/bootcamps');
 const courses = require('./routes/courses');
+const auth = require('./routes/auth');
 const connectBD = require('./config/db');
 // load env variables
 dotenv.config({ path: './config/config.env' });
@@ -16,6 +18,7 @@ dotenv.config({ path: './config/config.env' });
 connectBD();
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 //middlewares
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -25,6 +28,8 @@ app.use(fileupload());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/v1/bootcamps', bootcamps);
 app.use('/api/v1/courses', courses);
+app.use('/api/v1/auth', auth);
+
 app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () =>

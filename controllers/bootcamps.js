@@ -23,6 +23,20 @@ exports.getBootcamp = asyncHandler(async (req, res, next) => {
 // create specific bootcamp by id
 // access: private
 exports.createBootcamp = asyncHandler(async (req, res, next) => {
+  // add user to body
+  req.body.user = req.user.id;
+  // check for published bootcamp
+  const publishedBootcamp = await Bootcamp.findOne({ user: req.user.id });
+
+  // only allow 1 bootcamp per publisher, if admin can publish unlimited
+  if (publishedBootcamp && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `User with id ${req.user.id} has already published a bootcamp`,
+        400
+      )
+    );
+  }
   const newEntity = await Bootcamp.create(req.body);
   res.status(201).json({
     success: true,
@@ -34,15 +48,26 @@ exports.createBootcamp = asyncHandler(async (req, res, next) => {
 exports.updateBootcamp = asyncHandler(async (req, res, next) => {
   const id = req.params.id;
   const query = req.body;
-  const bootcamp = await Bootcamp.findByIdAndUpdate(id, query, {
-    new: true,
-    runValidators: true,
-  });
+  // check owner
+  let bootcamp = await Bootcamp.findById(id);
+
   if (!bootcamp) {
     return next(
       new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
     );
   }
+  if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `You are not authorized to edit the target bootcamp`,
+        401
+      )
+    );
+  }
+  bootcamp = await Bootcamp.findByIdAndUpdate(id, query, {
+    new: true,
+    runValidators: true,
+  });
   res.status(200).json({ success: true, data: bootcamp });
 });
 // remove specific bootcamp by id
@@ -53,6 +78,14 @@ exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
   if (!bootcamp) {
     return next(
       new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+    );
+  }
+  if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `You are not authorized to delete the target bootcamp`,
+        401
+      )
     );
   }
   bootcamp.remove();
@@ -82,6 +115,14 @@ exports.bootcampPhotoUpload = asyncHandler(async (req, res, next) => {
   if (!bootcamp) {
     return next(
       new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+    );
+  }
+  if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `You are not authorized to edit the target bootcamp`,
+        401
+      )
     );
   }
   if (!req.files) {

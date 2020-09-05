@@ -23,6 +23,11 @@ const CourseSchema = new mongoose.Schema({
   scholarshipAvailable: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
   bootcamp: { type: mongoose.Schema.ObjectId, ref: 'Bootcamp', required: true },
+  user: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: true,
+  },
 });
 CourseSchema.statics.getAverageCost = async function (bootcampId) {
   const obj = await this.aggregate([
