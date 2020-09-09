@@ -26,6 +26,9 @@ const UserSchema = new mongoose.Schema({
 });
 // encrypt password with bryptjs
 UserSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) {
+    next();
+  }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   // next();
@@ -41,13 +44,13 @@ UserSchema.methods.matchPassword = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };
 // generate and hash reset password token
-UserSchema.methods.getResetPasswordToken = async function () {
+UserSchema.methods.getResetPasswordToken = function () {
   // generate token
   const resetToken = crypto.randomBytes(20).toString('hex');
   // hash the token and set to document
   this.resetPasswordToken = crypto
     .createHash('sha256')
-    .update(reset)
+    .update(resetToken)
     .digest('hex');
   // set expiration;
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
